@@ -1,0 +1,5 @@
+Plate,Experiment,Group,Filename,Sample,Workspace,Compensation Source,Plot Title,Gate,X Parameter,Y Parameter,Count,Volume,Concentration,%Total,%Gated,X Mean,Y Mean,X Median,Y Median,X Peak,Y Peak,X SD,Y SD,X %CV,Y %CV,X rSD,Y rSD,X %rCV,Y %rCV
+dominance_controls_test_2,Anisogamy,plate_2,B7.fcs,B7,Experiment,None,N/A,All Events,N/A,N/A,10000,13,769.231,100.000,100.000,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A
+dominance_controls_test_2,Anisogamy,plate_2,B7.fcs,B7,Experiment,None,,R1,BL1-A,,4254,13,327.231,42.540,42.540,243980,N/A,243892,N/A,244710,N/A,25452.89,N/A,10.43,N/A,18768.97,N/A,7.70,N/A
+dominance_controls_test_2,Anisogamy,plate_2,B7.fcs,B7,Experiment,None,,R2,BL1-A,,627,13,48.231,6.270,6.270,436576,N/A,404110,N/A,359608,N/A,72896.36,N/A,16.70,N/A,59367.75,N/A,14.69,N/A
+dominance_controls_test_2,Anisogamy,plate_2,B7.fcs,B7,Experiment,None,,R3,BL1-A,,4901,13,377.000,49.010,49.010,126648,N/A,125979,N/A,123917,N/A,11016.00,N/A,8.70,N/A,7696.18,N/A,6.11,N/A
