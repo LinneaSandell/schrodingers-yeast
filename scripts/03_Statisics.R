@@ -78,7 +78,8 @@ cor.test(mylines_sub$beforeKO, mylines_sub$afterKO) # P = 0.17, cor = 0.14
 cor.test(mylines_sub$beforeKO, mylines_sub$afterKO, method = "kendall") # P = 0.217, cor = 0.087 NO CORRELATION
 
 mylines$lose <- mylines$anc_ID %in% tmp$anc_ID
-mylines$MAlose <- factor(paste(mylines$MA, mylines$lose), levels = c("control FALSE", "MA FALSE", "MA TRUE"), labels = c("control", "MA", "exclude"))
+mylines$MAlose <- factor(paste(mylines$MA, mylines$lose), 
+                         levels = c("control FALSE", "MA FALSE", "MA TRUE"), labels = c("control", "MA", "exclude"))
 (p1 <- ggplot(mylines, aes(x=beforeKO, y = afterKO))+
     #geom_smooth(method = lm, show.legend = FALSE, linetype = "dashed", alpha = 0.5) +
     geom_smooth(data = mylines_sub, method = lm) +
@@ -155,7 +156,7 @@ anova(af_cont, af_cont_line)
 
 # Figure 3 ----------------------------------------------------------------
 
-# September 2020
+# September 2019
 sep2019 <- read.csv("data/bioscreens/sep2019.csv") %>% filter(initOD < 0.27, initOD > 0.185) # 4 instances where the initial OD was very low or very high
 blanks <- read.csv("data/bioscreens/sep2019_blanks.csv") %>% group_by(day, machine) %>% summarise(mIni = mean(init_OD))
 sep2019 <- left_join(sep2019, blanks, by = c("machine", "day")) %>% mutate(machine = as.factor(machine), day = as.factor(day), mateA = as.factor(mateA), mateB = as.factor(mateB), genotype = as.factor(genotype))
@@ -171,7 +172,9 @@ interaction.plot(response = sep2019$maxSlope, x.factor = sep2019$genotype,
 ds1_noline <- lmerTest::lmer(maxSlope ~ petite + MA*genotype + RDH + initOD + (1|machine) + (1|day), sep2019, REML = F)
 sep2019$resid_noline <- resid(ds1_noline)
 
-ds1_summary <- sep2019 %>% group_by(Line.ID, mateA, genotype, petite, MA) %>% summarise(meanSlope = mean(maxSlope), meanResid = mean(resid_noline), samplesize = n(), se = sd(maxSlope)/sqrt(samplesize), resid_se = sd(resid_noline)/sqrt(samplesize), petite = unique(petite))
+ds1_summary <- sep2019 %>% group_by(Line.ID, mateA, genotype, petite, MA) %>% 
+  summarise(meanSlope = mean(maxSlope), meanResid = mean(resid_noline), 
+            samplesize = n(), se = sd(maxSlope)/sqrt(samplesize), resid_se = sd(resid_noline)/sqrt(samplesize), petite = unique(petite))
 ds1_largesum <- ds1_summary %>% group_by(genotype, MA, petite) %>% summarise(grandMean = mean(meanSlope), grandResidMean = mean(meanResid), linesize = n(), grandSE = sd(meanSlope)/sqrt(linesize), grandResidSE = sd(meanResid)/sqrt(linesize))
 
 ds1_summary$ds <- "DS1"
@@ -344,3 +347,63 @@ ggplot(bigdf, aes(x=meanSlope_homozygote, y = meanSlope_heterozygote, group = MA
 ggsave("figures/hetero_homo_correlation.pdf", height = 5, width =6)
 
 
+
+# Figure S1: Correlation in growth between haploid KO two datasets -------------------
+# Haploid KO lines that were not plasmid transformed were run once in September 2019 (DS1)
+# and once in November 2019 (in the MA to KO comparison).
+# Is there a correlation between their growth rates?
+
+test <- afterKO_sum %>% 
+  separate(Line2, into = c("extra", "Line.ID"), sep = 1) %>% 
+  left_join(ds1_summary, by = c("MA", "petite", "Line.ID")) %>% 
+  rename(meanSep = meanResid, meanNov = mean_resid,
+         seSep = resid_se, seNov = sem_resid)
+
+test$lose <- test$anc_ID %in% tmp$anc_ID
+test$MAlose <- factor(paste(test$MA, test$petite, test$lose), 
+                      levels = c("control not petite FALSE", 
+                                 "MA not petite FALSE", 
+                                 "MA petite FALSE", 
+                                 "MA petite TRUE"), labels = c("control", "MA", "petite", "exclude"))
+    
+testsub <- filter(test, petite == "not petite")
+cor.test(testsub$meanSep, testsub$meanNov, method = "kendall") # tau = 0.306, P < 10^-3
+
+ggplot(test, aes(x=meanSep, y = meanNov))+
+    #geom_smooth(method = lm, show.legend = FALSE, linetype = "dashed", alpha = 0.5) +
+    geom_smooth(data=testsub, method = lm) +
+    geom_errorbar(aes(ymin = meanNov - seNov, ymax = meanNov + seNov), alpha = 0.8) +
+    geom_errorbarh(aes(xmin = meanSep - seSep, xmax = meanSep + seSep), alpha = 0.8) +
+  geom_point(aes(fill = MAlose, shape = MAlose)) +
+  ggpubr::stat_cor(data = testsub, label.y.npc = 0.15, label.x.npc = 0.65, 
+                     method = "kendall", cor.coef.name = "tau", show.legend = FALSE)+
+    cowplot::theme_cowplot() +
+    scale_shape_manual(values = c(21,21, 21, 24)) +
+  scale_fill_manual(values = c(alpha("#F8766D", 0.75), alpha("#00BFC4", 0.75), "white", "white")) +
+    theme(legend.title = element_blank(), legend.direction = "horizontal", 
+          legend.position = c(0.05, 0.98), 
+          legend.background = element_rect(fill=alpha("gray", 0.2)))+
+    labs(y = "resid. Max slope November", x = "resid. Max slope September")
+ggsave("figures/FigureS1.pdf", height = 5, width =6)
+
+
+
+# Difference between plasmids ---------------------------------------------
+library(readxl)
+knockout <- readxl::read_xlsx("raw-data/knockout_records.xlsx", sheet = "KO records") %>% 
+  mutate(Line.ID =as.character(KO_code))
+
+haploid_plsasmids <- jan2020 %>% 
+  filter(ploidy == "haploid") %>% 
+  select(MA, RDH, petite, Line.ID) %>% 
+  distinct() %>% 
+  left_join(select(knockout, Line.ID, haploid_treatment), by = "Line.ID")
+
+haploid_plasmids %>% group_by(haploid_treatment, petite) %>% tally()
+
+chisq.test(haploid_plasmids$haploid_treatment, haploid_plasmids$petite)
+chisq.test(haploid_plasmids$haploid_treatment, haploid_plasmids$RDH)
+
+haploid_plasmids_2 <- left_join(haploid_plasmids, ds2_summary, by = c("MA", "RDH", "petite", "Line.ID"))
+
+ggplot(haploid_plasmids_2, aes(x=haploid_treatment, y =))
